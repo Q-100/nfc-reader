@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NFC Tag Reader</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            height: 100vh;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        .main-container {
+            flex: 1;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .history-container {
+            width: 350px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .status {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin-bottom: 30px;
+            border-left: 4px solid #28a745;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .status.disconnected {
+            border-left-color: #dc3545;
+        }
+
+        .tag-display {
+            background: #e3f2fd;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            min-width: 400px;
+            display: none;
+        }
+
+        .tag-display.active {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .tag-label {
+            font-size: 14px;
+            color: #1976d2;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        .tag-id {
+            font-size: 48px;
+            font-weight: bold;
+            color: #0d47a1;
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
+            margin-bottom: 20px;
+        }
+
+        .tag-message {
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 16px;
+            margin-top: 15px;
+        }
+
+        .tag-message.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .tag-message.fail {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .instruction {
+            background: #fff3cd;
+            border-radius: 15px;
+            padding: 40px;
+            border-left: 4px solid #ffc107;
+            text-align: center;
+            color: #856404;
+        }
+
+        .instruction-icon {
+            font-size: 64px;
+            margin-bottom: 15px;
+        }
+
+        .instruction-text {
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .history-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .history-list {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .history-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+            animation: slideInRight 0.3s ease-out;
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .history-item.success {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+
+        .history-item.fail {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+
+        .history-tag-id {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            font-family: 'Courier New', monospace;
+            margin-bottom: 5px;
+        }
+
+        .history-time {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 3px;
+        }
+
+        .history-count {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .error {
+            background: #f8d7da;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            border-left: 4px solid #dc3545;
+            color: #721c24;
+            display: none;
+        }
+
+        .error.active {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="main-container">
+        <h1>🔖 NFC Tag Reader</h1>
+        <p class="subtitle">태그를 리더기에 대주세요</p>
+
+        <div id="readerStatus" class="status disconnected">
+            <span id="readerStatusValue">연결 대기 중...</span>
+        </div>
+
+        <div class="booth-selector" style="margin-bottom: 30px; text-align: center;">
+            <label for="boothSelect"
+                style="display: block; font-size: 16px; font-weight: 600; color: #333; margin-bottom: 10px;">
+                🏪 부스 선택
+            </label>
+            <select id="boothSelect"
+                style="padding: 12px 20px; font-size: 16px; border-radius: 8px; border: 2px solid #667eea; background: white; cursor: pointer; min-width: 250px;">
+                <option value="">부스를 선택하세요</option>
+                <option value="Quick Build">Quick Build</option>
+                <option value="Engage SDK">Engage SDK</option>
+                <option value="Multiplatform">Multiplatform</option>
+                <option value="Level Up">Level Up</option>
+                <option value="Android XR">Android XR</option>
+            </select>
+            <div id="selectedBooth" style="margin-top: 10px; font-size: 14px; color: #666;">
+                선택된 부스: <span id="selectedBoothValue" style="font-weight: bold; color: #667eea;">없음</span>
+            </div>
+        </div>
+
+        <div id="tagDisplay" class="tag-display">
+            <div class="tag-label">Tag ID</div>
+            <div id="tagIdValue" class="tag-id">-</div>
+            <div id="tagMessage" class="tag-message"></div>
+        </div>
+
+        <div id="instruction" class="instruction">
+            <div class="instruction-icon pulse">📱</div>
+            <div class="instruction-text">NFC 태그를 리더기에 가까이 대주세요</div>
+        </div>
+
+        <div id="error" class="error"></div>
+    </div>
+
+    <div class="history-container">
+        <div class="history-title">� 태그 이력</div>
+        <div id="historyList" class="history-list"></div>
+    </div>
+
+    <script src="renderer.js"></script>
+</body>
+
+</html>
